@@ -1,0 +1,697 @@
+\documentclass[twoside]{article}
+
+\usepackage[preprint]{aistats2027}
+\usepackage[round,authoryear]{natbib}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{url}
+
+\renewcommand{\bibname}{References}
+\renewcommand{\bibsection}{\subsubsection*{\bibname}}
+\bibliographystyle{apalike}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{remark}[theorem]{Remark}
+\newcommand{\E}{\mathbb E}
+\newcommand{\Prb}{\mathbb P}
+\newcommand{\one}{\mathbf 1}
+\newcommand{\TV}{d_{\rm TV}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\supp}{\operatorname{supp}}
+\newcommand{\ip}[2]{\langle #1,#2\rangle}
+
+\begin{document}
+\runningtitle{Confidence Cost of Pairwise Learning}
+\runningauthor{}
+
+\twocolumn[
+\aistatstitle{The Confidence Cost\\of Pairwise Distribution Learning}
+
+\aistatsauthor{Pahan Dewasurendra}
+
+\aistatsaddress{Johns Hopkins University\\[4pt] July 30, 2026}
+]
+
+\begin{abstract}
+Pairwise conditional access to an unknown distribution returns a draw from
+the distribution restricted to any requested pair. At constant confidence,
+this weak oracle is as sample-efficient for labeled total-variation learning
+as ordinary sampling, up to constants. We show that this equivalence fails at
+high confidence.
+
+For a distribution on $n$ labels, accuracy $\varepsilon$, and failure
+probability $\delta$, we prove the exact minimax query complexity
+\[
+ \Theta\!\left(\frac{n\log(1/\delta)}{\varepsilon^2}\right).
+\]
+The corresponding ordinary-sampling complexity is
+$\Theta((n+\log(1/\delta))/\varepsilon^2)$. Thus confidence amplification
+costs up to a factor $n$ under pairwise access.
+
+The upper bound reuses one trajectory of a pairwise-winner Markov chain whose
+stationary law is the target. Although its worst-case relaxation time is
+linear in $n$, we prove that its empirical distribution has the i.i.d.-scale
+stationary risk $O(\sqrt{n/T})$. The proof compares its conductances with a
+minimum-mass graph. After sorting the target probabilities, this graph has an
+explicit Helmert eigensystem, and a capped-mass Green-function bound
+telescopes without any minimum-mass or dynamic-range assumption. A geometric
+median of independent trajectories gives the high-confidence result. The
+lower bound uses a heavy label and uniform light labels. Every adaptive pair
+query then carries only $O(\varepsilon^2/n)$ KL information, which makes the
+multiplicative confidence cost unavoidable.
+\end{abstract}
+
+\section{Introduction}
+
+Suppose an unknown distribution $p$ on $[n]$ cannot be sampled directly.
+Instead, a learner chooses two labels $i,j$ and observes a draw from $p$
+conditioned on $\{i,j\}$. This pairwise conditional, or PCOND, oracle is the
+sampling form of the Bradley--Terry--Luce choice model
+\citep{bradley1952rank,luce1959individual}. It appears when providers expose
+only local menus, when comparisons are easier to elicit than calibrated
+scores, and when global samples cannot be observed.
+
+Pairwise access identifies every labeled distribution, including targets
+with arbitrarily large dynamic range. The quantitative picture was recently
+clarified by \citet{kleinberg2026providers}. Their structural theory of
+restricted providers gives
+\begin{equation}
+ \Omega\!\left(\frac{n+\log(1/\delta)}{\varepsilon^2}\right)
+ \ \le q_{\rm pair}\ \le
+ O\!\left(\frac{n\log^2 n\log(n/\delta)}{\varepsilon^2}\right),
+ \label{eq:prior-gap}
+\end{equation}
+and asks whether the remaining polylogarithmic gap can be closed. Existing
+comparison estimators do not settle this question. Their useful uniform
+bounds generally impose a bounded parameter range, a fixed passive design,
+or a different loss on log qualities
+\citep{shah2015estimation,agarwal2018accelerated,
+hendrickx2019resistance,hendrickx2020minimax}.
+
+We close the gap, but the answer differs from the ordinary-sampling
+benchmark. Pairwise learning has a multiplicative, not additive, dependence
+on confidence.
+
+\begin{theorem}[Minimax pairwise learning]
+\label{thm:minimax}
+There are universal constants $c,C>0$ such that, for $n\ge4$,
+$0<\varepsilon\le1/16$, and $0<\delta\le1/8$,
+\begin{equation}
+ c\frac{n\log(1/\delta)}{\varepsilon^2}
+ \le q_{\rm pair}(n,\varepsilon,\delta)
+ \le C\frac{n\log(1/\delta)}{\varepsilon^2}.
+ \label{eq:minimax}
+\end{equation}
+The upper bound is attained by a polynomial-time adaptive learner and allows
+arbitrary zero probabilities.
+\end{theorem}
+
+For comparison, ordinary i.i.d. sampling has complexity
+$\Theta((n+\log(1/\delta))/\varepsilon^2)$
+\citep{canonne2020short}. At constant confidence the two models both require
+$\Theta(n/\varepsilon^2)$ observations. If
+$\log(1/\delta)\gg n$, pairwise access requires a factor $\Theta(n)$ more.
+Table~\ref{tab:rates} summarizes the separation.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Minimax labeled TV learning rates.}
+\label{tab:rates}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lc@{}}
+\toprule
+Observation model & query or sample complexity \\
+\midrule
+Ordinary samples & $\Theta((n+\log(1/\delta))/\varepsilon^2)$ \\
+Pairwise conditional & $\Theta(n\log(1/\delta)/\varepsilon^2)$ \\
+Prior pairwise upper & $O(n\log^2n\log(n/\delta)/\varepsilon^2)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Why mixing time is misleading.}
+The upper bound starts from a natural chain. From state $i$, propose a
+uniformly random $j\ne i$, query $\{i,j\}$, and retain the returned winner.
+Its stationary law is $p$. Restarting after each $O(n)$-step burn-in gives a
+quadratic learner. A single trajectory has worst-case relaxation time
+$\Theta(n)$, so a black-box spectral-gap bound still suggests quadratic
+cost. The slow mode, however, occurs only when its stationary mass is small
+or concentrated in a few coordinates. Total variation automatically weights
+these modes by their statistical relevance.
+
+Our main technical result makes this compensation exact. We dominate the
+chain's Green function by that of the complete graph with edge conductance
+$\min(p_i,p_j)/n$. Once $p_1\ge\cdots\ge p_m>0$, this graph is diagonalized by
+the Helmert contrasts. Its eigenvalues are capped masses
+\[
+ c_k/n,\qquad c_k=kp_k+\sum_{j>k}p_j
+                  =\sum_j\min\{p_j,p_k\}.
+\]
+The coordinate Green functions then split into left, local, and right terms.
+Each aggregate term is bounded by one telescoping inequality. This yields
+$O(\sqrt{n/T})$ TV risk uniformly over the whole simplex.
+
+\paragraph{Why confidence is different.}
+Take one label of mass near $1/2$ and spread the remaining mass uniformly
+over $n-1$ labels. Changing the heavy mass by $\Theta(\varepsilon)$ changes
+the outcome probability of every informative pair by only
+$\Theta(\varepsilon/n)$, while that outcome itself has probability
+$\Theta(1/n)$. Each query therefore contributes only
+$O(\varepsilon^2/n)$ KL divergence. This obstruction applies transcript by
+transcript to adaptive learners and forces the product
+$n\log(1/\delta)/\varepsilon^2$.
+
+\paragraph{Contributions.}
+Our results are entirely theoretical.
+\begin{enumerate}
+\item We determine the minimax PCOND complexity at every confidence level,
+closing the dimension and accuracy gap in \eqref{eq:prior-gap}.
+\item We prove a distribution-free occupation-risk theorem for the winner
+chain. The result has no lower mass, bounded ratio, or warm-start assumption.
+\item We identify a confidence separation between pairwise conditional and
+ordinary sampling, and prove that adaptive pair selection cannot remove it.
+\end{enumerate}
+
+\section{Model and Algorithm}
+\label{sec:model}
+
+Let $\Delta_n$ be the simplex on $[n]$. For $p\in\Delta_n$, a query to an
+unordered pair $\{i,j\}$ returns $i$ with probability
+$p_i/(p_i+p_j)$ and $j$ otherwise. If both masses vanish, the response may
+follow any fixed convention. A learner may choose each pair using its past
+queries, responses, and private randomness.
+
+We define $q_{\rm pair}(n,\varepsilon,\delta)$ as the least fixed query
+budget for which some learner returns $\widehat p$ satisfying
+\begin{align*}
+ \sup_{p\in\Delta_n}
+ \Prb_p\{\TV(\widehat p,p)>\varepsilon\}&\le\delta,\\
+ \TV(p,q)&=\tfrac12\|p-q\|_1.
+\end{align*}
+
+One base estimator follows a single winner-chain trajectory. Repeating it
+and aggregating by a metric median gives Algorithm~\ref{alg:learner}. An
+$L_1$ geometric median is any minimizer over $\Delta_n$ of the sum of
+distances to the candidates. It is computable by a linear program.
+
+\begin{algorithm}[t]
+\caption{High-confidence pairwise learner}
+\label{alg:learner}
+\begin{algorithmic}[1]
+\STATE Set $C_0=2+2\sqrt2$,
+$B=\lceil(n-1)\log(48/\varepsilon)\rceil$,
+$T=\lceil(48^2C_0^2n/\varepsilon^2\rceil$, and
+$R=\lceil18\log(1/\delta)\rceil$.
+\FOR{$r=1,\ldots,R$}
+  \STATE Start at an arbitrary $X_0\in[n]$.
+  \FOR{$t=0,\ldots,B+T-1$}
+    \STATE Draw $J_t$ uniformly from $[n]\setminus\{X_t\}$.
+    \STATE Query $\{X_t,J_t\}$ and set $X_{t+1}$ to its winner.
+  \ENDFOR
+  \STATE Let $\widehat p_r$ be the empirical law of
+  $X_{B+1},\ldots,X_{B+T}$.
+\ENDFOR
+\RETURN an $L_1$ geometric median of $\widehat p_1,\ldots,\widehat p_R$.
+\end{algorithmic}
+\end{algorithm}
+
+The stated constants simplify the proof and are not optimized. Since
+$\log(48/\varepsilon)=O(1/\varepsilon^2)$, the total query count has the
+order in Theorem~\ref{thm:minimax}.
+
+\subsection{What the algorithm changes}
+\label{sec:algorithm-comparison}
+
+The global chain itself is not new. It appears in the generic complete-family
+learner of \citet{kleinberg2026providers}. The difference is which states are
+kept and how they are analyzed. That learner runs the chain for
+$B=\Theta(n\log(1/\varepsilon))$ steps, keeps only the terminal state, and
+restarts independently $M=\Theta((n+\log(1/\delta))/\varepsilon^2)$ times.
+Even in the pairwise case, this costs
+\[
+ \Theta\!\left(
+ \frac{n(n+\log(1/\delta))\log(1/\varepsilon)}{\varepsilon^2}
+ \right)
+\]
+queries. Their faster hierarchical learner keeps trajectories inside many
+tree cells, then reconstructs $p$ from binary split estimates. It pays two
+tree-depth logarithms and a simultaneous-confidence logarithm.
+
+Algorithm~\ref{alg:learner} instead burns in one global chain and retains
+every later state. This removes repeated mixing, but standard MCMC analysis
+does not justify the improvement. The uniform minorization in
+\eqref{eq:minorization} gives gap only $1/(n-1)$. Applying that gap to each
+coordinate and summing gives the unhelpful bound $O(n/\sqrt T)$. The next
+section replaces this worst-mode argument by a joint coordinate calculation.
+
+\section{One Trajectory Has i.i.d.-Scale Risk}
+\label{sec:risk}
+
+We first analyze a stationary trajectory. On the positive support of $p$,
+the winner chain has transition kernel
+\begin{equation}
+ P(i,j)=\frac1{n-1}\frac{p_j}{p_i+p_j},\quad i\ne j,
+ \label{eq:kernel}
+\end{equation}
+with the diagonal chosen to make rows sum to one. Detailed balance holds
+because
+\begin{equation}
+ p_iP(i,j)=\frac{p_ip_j}{(n-1)(p_i+p_j)}=p_jP(j,i).
+ \label{eq:balance}
+\end{equation}
+
+\begin{theorem}[Stationary occupation risk]
+\label{thm:risk}
+Let $(X_t)_{t=1}^T$ be a stationary trajectory of \eqref{eq:kernel}, and let
+$\widehat p_T$ be its empirical law. For every $p\in\Delta_n$,
+\begin{equation}
+ \E_p\TV(\widehat p_T,p)
+ \le (2+2\sqrt2)\sqrt{\frac nT}.
+ \label{eq:risk}
+\end{equation}
+\end{theorem}
+
+The result is not a consequence of the worst-case gap, which can be
+$\Theta(1/n)$. We prove it through coordinate-specific Green functions.
+Let $f_i(x)=\one\{x=i\}-p_i$ and
+\begin{equation}
+ H_i=\ip{f_i}{(I-P)^{-1}f_i}_{p},
+ \label{eq:green}
+\end{equation}
+where the inverse acts on mean-zero functions in $L_2(p)$.
+
+There is a useful electrical interpretation. Let $D=\diag(p)$ and let
+$L=D(I-P)$ be the weighted graph Laplacian associated with
+\eqref{eq:balance}. Since
+\[
+ Df_i=p_i(e_i-p)=:b_i,
+\]
+the coordinate Green function is
+\begin{equation}
+ H_i=b_i^\top L^\dagger b_i.
+ \label{eq:electrical}
+\end{equation}
+Thus $H_i$ is the minimum energy needed to send source
+$p_i(1-p_i)$ from $i$ and absorb $p_ip_j$ at every $j\ne i$. A small global
+gap can coexist with small coordinate energy because each source is scaled
+by its target mass.
+
+\begin{lemma}[Positive spectrum and variance]
+\label{lem:variance}
+The kernel $P$ is positive semidefinite on $L_2(p)$. Moreover,
+\begin{equation}
+ \operatorname{Var}_p\!\left(\frac1T\sum_{t=1}^Tf_i(X_t)\right)
+ \le\frac{2H_i}{T}.
+ \label{eq:variance}
+\end{equation}
+\end{lemma}
+
+For positive semidefiniteness, use
+\[
+ \frac{p_ip_j}{p_i+p_j}(f_i-f_j)^2
+ \le p_if_i^2+p_jf_j^2
+\]
+and sum over pairs. Reversibility then gives eigenvalues in $[0,1]$.
+Expanding an additive functional in the eigenbasis and summing its geometric
+covariances proves \eqref{eq:variance}.
+
+It remains to control all $H_i$ jointly. Let $m=|\supp(p)|$ and relabel the
+positive masses so that $p_1\ge\cdots\ge p_m>0$. Define
+\begin{equation}
+ c_k=kp_k+\sum_{j>k}p_j.
+ \label{eq:capped}
+\end{equation}
+
+\begin{lemma}[Capped-mass Green bound]
+\label{lem:profile}
+For $i\in[m]$, define
+\begin{align}
+ A_i={}&\sum_{k=2}^{i-1}\frac{(1-c_k)^2}{k(k-1)c_k}
+ +\one\{i\ge2\}\frac{(i-c_i)^2}{i(i-1)c_i}\notag\\
+ &+\sum_{k=i+1}^{m}\frac{c_k}{k(k-1)}.
+ \label{eq:Ai}
+\end{align}
+Then
+\begin{equation}
+ H_i\le2np_i^2A_i,
+ \qquad
+ \sum_{i=1}^{m}p_i\sqrt{A_i}\le2+2\sqrt2.
+ \label{eq:profile}
+\end{equation}
+\end{lemma}
+
+\paragraph{Proof idea.}
+The Dirichlet conductance in \eqref{eq:balance} obeys
+\begin{equation}
+ \frac{p_ip_j}{(n-1)(p_i+p_j)}
+ \ge\frac{\min\{p_i,p_j\}}{2n}.
+ \label{eq:conductance-domination}
+\end{equation}
+Let $L_0$ be the graph Laplacian with conductance
+$\min\{p_i,p_j\}/n$. The Helmert vectors
+\begin{equation}
+ u_k=\frac{(\underbrace{1,\ldots,1}_{k-1},-(k-1),0,\ldots,0)}
+ {\sqrt{k(k-1)}}
+ \label{eq:helmert}
+\end{equation}
+diagonalize $L_0$, with $L_0u_k=(c_k/n)u_k$. Projecting the coordinate source
+$p_i(e_i-p)$ onto this basis gives \eqref{eq:Ai} exactly. The factor two in
+\eqref{eq:profile} follows from \eqref{eq:conductance-domination}.
+
+For completeness, the projections are explicit. One has
+\[
+ u_k^\top p=\frac{1-c_k}{\sqrt{k(k-1)}},
+\]
+and hence
+\begin{equation}
+ \frac{u_k^\top b_i}{p_i}=
+ \begin{cases}
+ -(1-c_k)/\sqrt{k(k-1)},&k<i,\\
+ -(i-c_i)/\sqrt{i(i-1)},&k=i,\\
+ c_k/\sqrt{k(k-1)},&k>i.
+ \end{cases}
+ \label{eq:projections}
+\end{equation}
+Dividing their squares by $c_k/n$ produces the three terms of
+\eqref{eq:Ai}. Since the exact conductances dominate half of those of
+$L_0$, the inverse-Laplacian variational principle yields
+$L^\dagger\preceq2L_0^\dagger$ on the zero-sum subspace. This proves the
+first part of Lemma~\ref{lem:profile}.
+
+For the aggregate bound, split $A_i$ into the three sums in
+\eqref{eq:Ai}. Jensen's inequality and a change in summation order bound the
+first and third contributions by one each. For example,
+\[
+ \sum_i p_i\sqrt{\sum_{k<i}
+ \frac{(1-c_k)^2}{k(k-1)c_k}}
+ \le\sqrt{\sum_{k\ge2}\frac1{k(k-1)}}\le1,
+\]
+where $\sum_{i>k}p_i\le c_k$. For the middle term, let
+$S_i=\sum_{j\ge i}p_j$. Since $c_i\ge S_i$,
+\begin{align*}
+ \sum_{i\ge2}p_i\frac{i-c_i}{\sqrt{i(i-1)c_i}}
+ &\le\sqrt2\sum_i\frac{p_i}{\sqrt{S_i}}\\
+ &\le2\sqrt2.
+\end{align*}
+The last inequality telescopes using
+$(S_i-S_{i+1})/\sqrt{S_i}\le2(\sqrt{S_i}-\sqrt{S_{i+1}})$.
+The supplement gives every projection and boundary case.
+
+\begin{corollary}[Profile-aware risk]
+\label{cor:profile-risk}
+With $A_i$ as in \eqref{eq:Ai}, every stationary trajectory satisfies
+\begin{align}
+ \E\TV(\widehat p_T,p)
+ &\le\sqrt{\frac nT}\,\Psi(p),\notag\\
+ \Psi(p)&:=\sum_{i\in\supp(p)}p_i\sqrt{A_i}
+ \le2+2\sqrt2.
+ \label{eq:profile-risk}
+\end{align}
+\end{corollary}
+
+\paragraph{Proof of Theorem~\ref{thm:risk}.}
+By Lemmas~\ref{lem:variance} and \ref{lem:profile},
+\begin{align*}
+ \E\TV(\widehat p_T,p)
+ &\le\frac12\sum_i
+ \sqrt{\operatorname{Var}(\widehat p_T(i))}\\
+ &\le\sqrt{\frac nT}\sum_i p_i\sqrt{A_i}
+ \le(2+2\sqrt2)\sqrt{\frac nT}.
+\end{align*}
+
+\subsection{Examples and the slow mode}
+\label{sec:examples}
+
+The profile functional in \eqref{eq:profile-risk} reveals why a global gap
+bound is loose. If $p$ is uniform on all $n$ labels, then $c_k=1$ and direct
+substitution gives
+\[
+ A_i=1-\frac1n,\qquad
+ \Psi(p)=\sqrt{1-\frac1n}.
+\]
+The winner chain is a lazy complete-graph walk. Its TV occupation risk is
+therefore bounded by $\sqrt{(n-1)/T}$, at the ordinary empirical-distribution
+scale.
+
+At the other extreme, take
+\begin{equation}
+ p_1=\frac12,\qquad p_j=\frac1{2(n-1)},\quad j\ge2.
+ \label{eq:half-heavy}
+\end{equation}
+The indicator $Y_t=\one\{X_t=1\}$ is itself a two-state Markov chain. From
+either aggregate state it flips with probability exactly $1/n$. Its
+nonconstant eigenvalue is $1-2/n$, so estimating the heavy mass from one
+trajectory has variance of order $n/T$. This is a genuine slow mode.
+Nevertheless, there is only one such aggregate coordinate. The remaining
+$n-1$ light coordinates leave their individual states at constant rate. The
+sum of all coordinate standard deviations remains $O(\sqrt{n/T})$, exactly
+as Lemma~\ref{lem:profile} certifies.
+
+For a nearly point-mass target, the slow aggregate mode becomes still slower,
+but its stationary variance shrinks in the same proportion. In capped-mass
+language, the local denominator $c_k$ decreases only where the corresponding
+tail mass also decreases. The left and middle telescopes in the proof are the
+finite-dimensional expression of this compensation.
+
+These examples also separate estimation from independent sampling. The
+uniform target behaves nearly as if the retained states were independent.
+The half-heavy target has only about $T/n$ effective observations of its
+heavy-versus-light split. That split is precisely the source of the
+high-confidence lower bound in Section~\ref{sec:lower}.
+
+\section{Burn-in and Confidence Amplification}
+\label{sec:upper}
+
+The winner chain admits the pointwise minorization
+\begin{equation}
+ P(i,\cdot)\ge\frac1{n-1}p(\cdot).
+ \label{eq:minorization}
+\end{equation}
+This also holds from a zero-mass state. Hence, from every initial law $\mu$,
+\begin{equation}
+ \TV(\mu P^B,p)\le e^{-B/(n-1)}.
+ \label{eq:burn}
+\end{equation}
+Applying the same Markov kernel to two initial states cannot increase TV, so
+\eqref{eq:burn} also bounds the distance between the entire post-burn path
+and a stationary path.
+
+With the $B,T$ in Algorithm~\ref{alg:learner}, Theorem~\ref{thm:risk} and
+\eqref{eq:burn} give
+\[
+ \E\TV(\widehat p_r,p)\le\varepsilon/24.
+\]
+Markov's inequality shows that each candidate is within $\varepsilon/4$ with
+probability at least $5/6$. Hoeffding's inequality implies that at least
+$2R/3$ candidates are good except with probability $e^{-R/18}\le\delta$.
+
+If $G$ of $R$ points in any metric space lie within radius $r$ of $p$, where
+$G>R/2$, every geometric median $q$ satisfies
+\begin{equation}
+ d(q,p)\le\frac{2G}{2G-R}r.
+ \label{eq:median}
+\end{equation}
+Indeed, compare its sum of distances with the sum at $p$ and apply the
+triangle inequality separately to the good and bad points. With
+$G\ge2R/3$ and $r=\varepsilon/4$, \eqref{eq:median} proves the upper bound in
+Theorem~\ref{thm:minimax}.
+
+\paragraph{Computation.}
+The chain uses one oracle call and $O(1)$ additional work per transition if a
+uniform challenger can be sampled in constant time. The candidate histograms
+require $O(Rn)$ storage in a direct implementation. The geometric median in
+\eqref{eq:median} is the linear program
+\[
+ \min_{q\in\Delta_n,z\ge0}\sum_{r,i}z_{ri}
+ \quad\text{subject to}\quad
+ -z_{ri}\le q_i-\widehat p_r(i)\le z_{ri}.
+\]
+Thus the statistical upper bound is also polynomial-time. Approximate
+minimization to $o(\varepsilon R)$ preserves the guarantee up to a constant
+change in accuracy.
+
+\paragraph{Why ordinary confidence is additive.}
+For $T$ i.i.d. samples, the empirical TV risk is $O(\sqrt{n/T})$. Changing
+one sample changes TV loss by at most $1/T$, so bounded differences adds only
+$O(\sqrt{\log(1/\delta)/T})$ to this expectation
+\citep{canonne2020short}. This gives the sum
+$n+\log(1/\delta)$. Winner-chain states do not have this product
+concentration. The half-heavy example in \eqref{eq:half-heavy} retains one
+transition for $\Theta(n)$ steps on average. The lower bound below shows that
+no different adaptive estimator can bypass the resulting confidence cost.
+
+\section{The Confidence Cost Is Necessary}
+\label{sec:lower}
+
+We now show that no adaptive pair selection can attain the additive
+confidence dependence of ordinary sampling. For $a\in(0,1)$, define
+\begin{equation}
+ p_a(1)=a,\qquad p_a(j)=\frac{1-a}{n-1},\quad j\ge2.
+ \label{eq:hard-family}
+\end{equation}
+Take $a_-=1/2-2\varepsilon$ and $a_+=1/2+2\varepsilon$. Then
+$\TV(p_{a_-},p_{a_+})=4\varepsilon$.
+
+A query not containing label $1$ returns a fair draw under both hypotheses.
+For $\{1,j\}$, let the response be one when the light label wins. Its
+Bernoulli parameter is
+\begin{equation}
+ r(a)=\frac{1-a}{1+(n-2)a}.
+ \label{eq:rare-coin}
+\end{equation}
+On $a\in[1/4,3/4]$, one has $r(a)=\Theta(1/n)$ and
+\begin{equation}
+ |r'(a)|=\frac{n-1}{(1+(n-2)a)^2}=O(1/n).
+ \label{eq:rare-derivative}
+\end{equation}
+The elementary Bernoulli bound
+$D_{\rm KL}(x\|y)\le(x-y)^2/[y(1-y)]$ therefore gives
+\begin{equation}
+ D_{\rm KL}(\operatorname{Bern}(r(a_-))\| 
+ \operatorname{Bern}(r(a_+)))
+ \le C_1\frac{\varepsilon^2}{n}.
+ \label{eq:one-query-kl}
+\end{equation}
+
+For an adaptive learner, condition on each realized transcript before the
+next query. Every possible pair obeys \eqref{eq:one-query-kl}, so the KL
+chain rule bounds the divergence between length-$Q$ transcript laws by
+$C_1Q\varepsilon^2/n$.
+
+If an estimator is $\varepsilon$ accurate with probability $1-\delta$ under
+both hypotheses, choosing the closer of $p_{a_-}$ and $p_{a_+}$ produces a
+test whose two error probabilities are at most $\delta$. The
+Bretagnolle--Huber inequality then requires transcript KL at least
+$\log(1/(4\delta))$. Consequently,
+\[
+ Q\ge c_1\frac{n\log(1/\delta)}{\varepsilon^2},
+\]
+which proves the lower bound in Theorem~\ref{thm:minimax}.
+
+\section{Bounded Menus Interpolate the Obstruction}
+\label{sec:bounded-menu}
+
+The confidence phenomenon is not unique to pairs. It weakens continuously
+when a query may expose more light labels at once. Let
+$q_{\le k}(n,\varepsilon,\delta)$ denote minimax labeled TV complexity when
+the learner may condition on any nonempty menu of size at most $k$.
+
+\begin{proposition}[Bounded-menu confidence lower bound]
+\label{prop:bounded-menu}
+For $2\le k\le n$ and the parameter ranges of
+Theorem~\ref{thm:minimax},
+\begin{equation}
+ q_{\le k}(n,\varepsilon,\delta)
+ =\Omega\!\left(
+ \frac{n+(n/k)\log(1/\delta)}{\varepsilon^2}
+ \right).
+ \label{eq:bounded-menu}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+The $\Omega(n/\varepsilon^2)$ term already holds with unrestricted
+conditional access, since learning all labels is no easier than the standard
+multinomial packing used for ordinary samples
+\citep{canonne2020short,kleinberg2026providers}.
+
+For confidence, use the family \eqref{eq:hard-family}. A menu excluding label
+$1$ is uniform under both hypotheses. Suppose a menu contains label $1$ and
+$s\le k-1$ light labels. Conditional on a light outcome, its identity is
+uniform under both hypotheses, so all information is in the Bernoulli light
+probability
+\begin{equation}
+ r_s(a)=\frac{s(1-a)}{(n-1)a+s(1-a)}.
+ \label{eq:rs}
+\end{equation}
+Uniformly for $a\in[1/4,3/4]$, one has
+$r_s(a)=\Theta(s/n)$ and
+\[
+ |r_s'(a)|
+ =\frac{s(n-1)}{((n-1)a+s(1-a))^2}
+ =O(s/n).
+\]
+The Bernoulli KL is therefore $O(s\varepsilon^2/n)$, and hence at most
+$O(k\varepsilon^2/n)$, for every conditional menu and every transcript.
+The KL chain rule and Bretagnolle--Huber argument from
+Section~\ref{sec:lower} require
+$Q=\Omega((n/k)\log(1/\delta)/\varepsilon^2)$. Taking the maximum of the two
+lower bounds proves \eqref{eq:bounded-menu}.
+\end{proof}
+
+For $k=2$, Theorem~\ref{thm:minimax} matches
+\eqref{eq:bounded-menu}. For $k=n$, the lower bound becomes the ordinary
+additive rate. This identifies a candidate interpolation law, but we do not
+claim its upper bound for intermediate $k$. A direct $k$-winner chain has
+stationary law $p$ and a stronger minorization, yet its coordinate Green
+function is no longer the minimum-mass graph in Lemma~\ref{lem:profile}.
+Determining whether its occupation profile attains \eqref{eq:bounded-menu}
+is a separate open problem.
+
+\section{Related Work and Scope}
+\label{sec:related}
+
+\paragraph{Restricted conditional learning.}
+Conditional sampling was introduced for distribution testing
+\citep{canonne2015testing,chakraborty2016power}. The PCOND restriction is
+powerful for many label-invariant testing problems, but our target is the
+entire labeled distribution. \citet{kleinberg2026providers} characterize
+which fixed menu families permit pointwise and uniform labeled learning.
+Their global and local winner chains motivate ours. Their global learner
+restarts after every terminal sample, while their hierarchical learner keeps
+local trajectories to estimate tree splits. Our result instead controls the
+full empirical law of one global pairwise trajectory through its complete
+mass profile. It both removes the dimension logarithms and supplies the
+matching confidence lower bound.
+
+\paragraph{Comparison estimation and sampling.}
+Classical BTL work estimates rankings, log qualities, or normalized weights
+under passive comparison graphs. Sharp bounds depend on graph Laplacians,
+effective resistance, and often bounded dynamic range
+\citep{shah2015estimation,negahban2017rank,
+agarwal2018accelerated,hendrickx2019resistance,hendrickx2020minimax}.
+Our active estimator permits all simplex boundary points and is analyzed in
+labeled TV. \citet{fotakis2022perfect} construct exact samples from
+exogenously drawn pair comparisons using coupling from the past. Their
+distribution-free method first learns every weight to relative accuracy and
+solves a different exact-sampling objective.
+
+\paragraph{Biased sampling and Markov concentration.}
+Conditional menus are a finite selection-bias model. Classical work proves
+identifiability and asymptotic efficiency for fixed biased-sampling designs
+\citep{vardi1985empirical,gill1988large}. Generic reversible-chain
+concentration scales with a worst-case spectral gap
+\citep{jiang2018bernstein}. That route loses a factor $n$ here. The capped
+mass calculation is coordinate-specific and nonasymptotic.
+
+\paragraph{Limits and open directions.}
+Theorem~\ref{thm:minimax} concerns the family of all pairs. It does not close
+the polylogarithmic gaps for every hierarchically comparable menu family.
+Proposition~\ref{prop:bounded-menu} gives a broader necessary interpolation,
+but whether it is sufficient for every menu cap remains open. The present
+algorithm also assumes that every pair is available. Graph-restricted active
+designs may require additional connectivity and dynamic-range parameters.
+
+\section{Conclusion}
+
+Pairwise conditional samples retain enough aggregate information to learn a
+labeled distribution at the ordinary $n/\varepsilon^2$ rate at constant
+confidence. They do not retain the ordinary model's cheap confidence
+amplification. Reusing a single winner-chain trajectory attains the optimal
+constant-confidence rate, while independent trajectories and a metric median
+match the unavoidable multiplicative confidence cost. The proof explains
+why a linear relaxation time does not imply a linear loss in estimation
+risk: the slow modes and the TV sensitivity are coupled through the target's
+capped mass profile.
+
+\bibliography{references}
+
+\end{document}

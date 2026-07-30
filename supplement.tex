@@ -1,0 +1,685 @@
+\documentclass{article}
+
+\usepackage{aistats2027}
+\usepackage[round,authoryear]{natbib}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{url}
+
+\renewcommand{\bibname}{References}
+\renewcommand{\bibsection}{\subsubsection*{\bibname}}
+\bibliographystyle{apalike}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
+\newcommand{\E}{\mathbb E}
+\newcommand{\Prb}{\mathbb P}
+\newcommand{\one}{\mathbf 1}
+\newcommand{\TV}{d_{\rm TV}}
+\newcommand{\supp}{\operatorname{supp}}
+\newcommand{\ip}[2]{\langle #1,#2\rangle}
+
+\begin{document}
+
+\onecolumn
+\begin{center}
+ {\Large\bfseries Supplement to ``The Confidence Cost of Pairwise
+ Distribution Learning''}\\[0.75em]
+ Anonymous Authors
+\end{center}
+
+This supplement gives complete proofs of the winner-chain occupation bound,
+the arbitrary-start upper bound, and the adaptive confidence lower bound. It
+also proves the bounded-menu lower bound stated as an open-direction result
+in the main paper and records the numerical and source audits. Numbering is
+local to the supplement.
+
+\section{Pairwise Winner Chain}
+\label{app:chain}
+
+Fix a distribution $p\in\Delta_n$. From state $i$, the chain chooses
+$j\ne i$ uniformly, queries the pair $\{i,j\}$, and makes the returned label
+the next state. If $p_i+p_j>0$, then
+\begin{equation}
+ P(i,j)=\frac{p_j}{(n-1)(p_i+p_j)},\qquad i\ne j.
+ \label{eq:app-kernel}
+\end{equation}
+If $p_i=p_j=0$, the pair response may follow any fixed convention. The
+diagonal is the remaining row mass.
+
+\begin{lemma}[Stationarity, reversibility, and minorization]
+\label{lem:app-basic}
+The distribution $p$ is stationary. On its positive support the chain is
+reversible, and for every state $i$,
+\begin{equation}
+ P(i,\cdot)\ge\frac1{n-1}p(\cdot)
+ \label{eq:app-minorization}
+\end{equation}
+coordinatewise.
+\end{lemma}
+
+\begin{proof}
+For distinct positive-mass states $i,j$,
+\[
+ p_iP(i,j)=\frac{p_ip_j}{(n-1)(p_i+p_j)}=p_jP(j,i).
+\]
+Transitions from a positive-mass state to a zero-mass state have probability
+zero. Detailed balance on the support proves reversibility and stationarity.
+
+For the minorization, first take $j\ne i$. If $p_i+p_j>0$, then
+\[
+ P(i,j)=\frac1{n-1}\frac{p_j}{p_i+p_j}
+ \ge\frac{p_j}{n-1},
+\]
+since $p_i+p_j\le1$. If both masses vanish, the right side is zero. If
+$p_i=0$, the diagonal inequality is immediate. If $p_i>0$, then against
+every challenger $j$, the probability of remaining at $i$ is at least
+$p_i/(p_i+p_j)\ge p_i$. Averaging over challengers gives
+$P(i,i)\ge p_i\ge p_i/(n-1)$.
+\end{proof}
+
+For $n>2$, the minorization gives a Markov kernel $R$ such that
+\begin{equation}
+ P=\frac1{n-1}\Pi_p+\left(1-\frac1{n-1}\right)R,
+ \label{eq:app-doeblin}
+\end{equation}
+where every row of $\Pi_p$ is $p$. Thus, for any initial law $\mu$,
+\begin{equation}
+ \TV(\mu P^B,p)
+ \le\left(1-\frac1{n-1}\right)^B
+ \le e^{-B/(n-1)}.
+ \label{eq:app-mixing}
+\end{equation}
+For $n=2$, one query returns an exact $p$ draw from either state.
+
+\section{Positive Spectrum and Coordinate Variance}
+\label{app:variance}
+
+We work on the positive support of $p$. Zero-mass coordinates contribute
+nothing to TV under stationarity. Let $m=|\supp(p)|$. For a function
+$f\in L_2(p)$, reversibility gives the Dirichlet form
+\begin{equation}
+ \ip{f}{(I-P)f}_p
+ =\sum_{1\le i<j\le m}
+ \frac{p_ip_j}{(n-1)(p_i+p_j)}(f_i-f_j)^2.
+ \label{eq:app-dirichlet}
+\end{equation}
+
+\begin{lemma}[Positive semidefinite kernel]
+\label{lem:app-psd}
+Every eigenvalue of $P$ on $L_2(p)$ lies in $[0,1]$.
+\end{lemma}
+
+\begin{proof}
+The Markov and reversibility properties put the spectrum in $[-1,1]$. For
+each positive pair,
+\begin{equation}
+ \frac{p_ip_j}{p_i+p_j}(f_i-f_j)^2
+ \le p_if_i^2+p_jf_j^2.
+ \label{eq:app-edge-upper}
+\end{equation}
+Indeed, the right side minus the left side is
+$(p_if_i+p_jf_j)^2/(p_i+p_j)$. Each coordinate appears in at most $m-1$
+positive pairs. Summing \eqref{eq:app-edge-upper} and dividing by $n-1$
+gives
+\[
+ \ip{f}{(I-P)f}_p\le\ip{f}{f}_p.
+\]
+Hence $\ip{f}{Pf}_p\ge0$ for every $f$.
+\end{proof}
+
+For coordinate $i$, put $f_i(x)=\one\{x=i\}-p_i$ and
+\begin{equation}
+ H_i=\ip{f_i}{(I-P)^{-1}f_i}_p,
+ \label{eq:app-green}
+\end{equation}
+where the inverse acts on the mean-zero subspace.
+
+\begin{lemma}[Finite-horizon coordinate variance]
+\label{lem:app-coordinate-variance}
+For a stationary length-$T$ trajectory,
+\begin{equation}
+ \operatorname{Var}_p\!\left(\frac1T\sum_{t=1}^Tf_i(X_t)\right)
+ \le\frac{2H_i}{T}.
+ \label{eq:app-coordinate-variance}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Expand $f_i$ in an orthonormal eigenbasis of the mean-zero subspace. If
+$a^2$ is the squared coefficient associated with eigenvalue
+$\rho\in[0,1)$, its contribution to the variance is
+\[
+ \frac{a^2}{T^2}
+ \left(T+2\sum_{s=1}^{T-1}(T-s)\rho^s\right)
+ \le\frac{2a^2}{T(1-\rho)}.
+\]
+Summing the contributions gives \eqref{eq:app-coordinate-variance} by the
+spectral definition of $H_i$.
+\end{proof}
+
+\section{An Explicit Comparison Green Function}
+\label{app:profile}
+
+Relabel the positive probabilities so that
+$p_1\ge\cdots\ge p_m>0$. Define the graph Laplacian $L_0$ on $[m]$ whose
+edge conductances are
+\begin{equation}
+ w^0_{ij}=\frac{\min\{p_i,p_j\}}{n}.
+ \label{eq:app-min-graph}
+\end{equation}
+For $k\in[m]$, define
+\begin{equation}
+ c_k=kp_k+\sum_{j>k}p_j
+     =\sum_{j=1}^m\min\{p_j,p_k\}.
+ \label{eq:app-capped}
+\end{equation}
+
+\begin{lemma}[Helmert diagonalization]
+\label{lem:app-helmert}
+For $k=2,\ldots,m$, let
+\begin{equation}
+ u_k=\frac{(\underbrace{1,\ldots,1}_{k-1},-(k-1),0,\ldots,0)}
+ {\sqrt{k(k-1)}}.
+ \label{eq:app-helmert}
+\end{equation}
+The vectors $(u_k)_{k=2}^m$ are an orthonormal basis of the Euclidean
+zero-sum subspace and
+\begin{equation}
+ L_0u_k=\frac{c_k}{n}u_k.
+ \label{eq:app-eigenvalue}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Orthonormality is the standard Helmert calculation. Fix $k$. Every coordinate
+larger than $k$ sees equal conductance $p_j/n$ to all first $k$ coordinates,
+whose entries in $u_k$ sum to zero. Its image is therefore zero. A coordinate
+$i<k$ differs only from coordinate $k$ among the first $k$, contributing
+$kp_k/n$. Every coordinate $j>k$ contributes $p_j/n$. Thus the $i$th image
+is $(c_k/n)u_k(i)$. The same sum at coordinate $k$ is multiplied by
+$-(k-1)$, which proves \eqref{eq:app-eigenvalue}.
+\end{proof}
+
+Let $D=\operatorname{diag}(p)$. The graph Laplacian associated with
+\eqref{eq:app-dirichlet} is $L=D(I-P)$. For the centered indicator $f_i$,
+\begin{equation}
+ Df_i=p_i(e_i-p)=:b_i.
+ \label{eq:app-source}
+\end{equation}
+Therefore
+\begin{equation}
+ H_i=b_i^\top L^\dagger b_i.
+ \label{eq:app-electrical}
+\end{equation}
+The exact conductance of $L$ satisfies
+\begin{equation}
+ \frac{p_ip_j}{(n-1)(p_i+p_j)}
+ \ge\frac{\min\{p_i,p_j\}}{2(n-1)}
+ \ge\frac12 w^0_{ij}.
+ \label{eq:app-loewner}
+\end{equation}
+It follows by the variational characterization of inverse Laplacians that
+\begin{equation}
+ H_i\le2b_i^\top L_0^\dagger b_i.
+ \label{eq:app-loewner-inverse}
+\end{equation}
+
+\begin{lemma}[Exact diagonal formula]
+\label{lem:app-diagonal}
+Define
+\begin{align}
+ A_i={}&\sum_{k=2}^{i-1}\frac{(1-c_k)^2}{k(k-1)c_k}
+ +\one\{i\ge2\}\frac{(i-c_i)^2}{i(i-1)c_i}\notag\\
+ &+\sum_{k=i+1}^{m}\frac{c_k}{k(k-1)}.
+ \label{eq:app-Ai}
+\end{align}
+Then
+\begin{equation}
+ b_i^\top L_0^\dagger b_i=np_i^2A_i,
+ \qquad H_i\le2np_i^2A_i.
+ \label{eq:app-diagonal}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+First observe from \eqref{eq:app-capped} and \eqref{eq:app-helmert} that
+\begin{equation}
+ u_k^\top p=\frac{1-c_k}{\sqrt{k(k-1)}}.
+ \label{eq:app-projected-mean}
+\end{equation}
+Since $b_i=p_i(e_i-p)$, its projection onto $u_k$ is $p_i$ times
+\begin{equation}
+ u_k(i)-u_k^\top p=
+ \begin{cases}
+ -(1-c_k)/\sqrt{k(k-1)}, & k<i,\\
+ -(i-c_i)/\sqrt{i(i-1)}, & k=i,\\
+ c_k/\sqrt{k(k-1)}, & k>i.
+ \end{cases}
+ \label{eq:app-projections}
+\end{equation}
+Divide the squared projections by the eigenvalues $c_k/n$ from
+Lemma~\ref{lem:app-helmert} and sum over $k$. This gives the equality in
+\eqref{eq:app-diagonal}. The inequality follows from
+\eqref{eq:app-loewner-inverse}.
+\end{proof}
+
+\section{The Profile Sum Telescopes}
+\label{app:telescope}
+
+Write $A_i=L_i+M_i+R_i$ for the three terms in
+\eqref{eq:app-Ai}. We prove the aggregate inequality used in the main paper.
+
+\begin{lemma}[Uniform profile bound]
+\label{lem:app-profile-sum}
+For every nonincreasing positive probability vector,
+\begin{equation}
+ \sum_{i=1}^mp_i\sqrt{A_i}\le2+2\sqrt2.
+ \label{eq:app-profile-sum}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+By Jensen's inequality and a change in summation order,
+\begin{align}
+ \sum_i p_i\sqrt{L_i}
+ &\le\sqrt{\sum_i p_iL_i}\\
+ &=\sqrt{\sum_{k=2}^{m-1}
+ \frac{(1-c_k)^2}{k(k-1)c_k}\sum_{i>k}p_i}\\
+ &\le\sqrt{\sum_{k=2}^{m-1}\frac1{k(k-1)}}\le1.
+ \label{eq:app-left}
+\end{align}
+The last line uses $\sum_{i>k}p_i\le c_k$ and $1-c_k\le1$. Similarly,
+\begin{align}
+ \sum_i p_i\sqrt{R_i}
+ &\le\sqrt{\sum_i p_iR_i}\\
+ &=\sqrt{\sum_{k=2}^{m}\frac{c_k}{k(k-1)}
+ \sum_{i<k}p_i}\\
+ &\le\sqrt{\sum_{k=2}^{m}\frac1{k(k-1)}}\le1.
+ \label{eq:app-right}
+\end{align}
+
+For the middle term, define $S_i=\sum_{j\ge i}p_j$. Since
+$c_i=ip_i+\sum_{j>i}p_j\ge S_i$ and $i/(i-1)\le2$,
+\begin{align}
+ \sum_i p_i\sqrt{M_i}
+ &\le\sqrt2\sum_i\frac{p_i}{\sqrt{c_i}}
+ \le\sqrt2\sum_i\frac{S_i-S_{i+1}}{\sqrt{S_i}}.
+ \label{eq:app-middle1}
+\end{align}
+For $0\le b\le a$,
+\begin{equation}
+ \frac{a-b}{\sqrt a}\le2(\sqrt a-\sqrt b).
+ \label{eq:app-sqrt-telescope}
+\end{equation}
+Apply this with $a=S_i,b=S_{i+1}$ and telescope to obtain
+\begin{equation}
+ \sum_i p_i\sqrt{M_i}\le2\sqrt2.
+ \label{eq:app-middle2}
+\end{equation}
+Finally, $\sqrt{L_i+M_i+R_i}\le\sqrt{L_i}+\sqrt{M_i}+\sqrt{R_i}$.
+Combining \eqref{eq:app-left}, \eqref{eq:app-right}, and
+\eqref{eq:app-middle2} proves the claim.
+\end{proof}
+
+\section{Stationary Occupation Risk}
+\label{app:stationary}
+
+\begin{theorem}[Stationary risk]
+\label{thm:app-risk}
+For a stationary length-$T$ winner-chain trajectory with empirical law
+$\widehat p_T$,
+\begin{equation}
+ \E\TV(\widehat p_T,p)
+ \le(2+2\sqrt2)\sqrt{\frac nT}.
+ \label{eq:app-risk}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+If the support has size one, the claim is immediate. Otherwise,
+Lemmas~\ref{lem:app-coordinate-variance} and \ref{lem:app-diagonal} give
+\[
+ \operatorname{Var}(\widehat p_T(i))
+ \le\frac{4np_i^2A_i}{T}.
+\]
+Jensen's inequality and Lemma~\ref{lem:app-profile-sum} yield
+\begin{align*}
+ \E\TV(\widehat p_T,p)
+ &\le\frac12\sum_i\E|\widehat p_T(i)-p_i|\\
+ &\le\frac12\sum_i\sqrt{\operatorname{Var}(\widehat p_T(i))}\\
+ &\le\sqrt{\frac nT}\sum_i p_i\sqrt{A_i}
+ \le(2+2\sqrt2)\sqrt{\frac nT}.
+\end{align*}
+Zero-mass coordinates are never visited under stationarity and add zero.
+\end{proof}
+
+\section{Arbitrary Starts and High Confidence}
+\label{app:amplification}
+
+Set $C_0=2+2\sqrt2$ and
+\begin{equation}
+ B=\left\lceil(n-1)\log\frac{48}{\varepsilon}\right\rceil,
+ \qquad
+ T=\left\lceil48^2C_0^2\frac{n}{\varepsilon^2}\right\rceil.
+ \label{eq:app-BT}
+\end{equation}
+Start the winner chain from an arbitrary state and form its empirical law
+$\widehat p$ over the $T$ states after burn-in.
+
+\begin{lemma}[One base estimate]
+\label{lem:app-base}
+The estimate satisfies
+\begin{equation}
+ \Prb\{\TV(\widehat p,p)>\varepsilon/4\}\le1/6.
+ \label{eq:app-base}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+By \eqref{eq:app-mixing}, the state after burn-in is within
+$\varepsilon/48$ TV of stationarity. Generate the entire subsequent path by
+applying one common path kernel to either initial law. Data processing shows
+that the arbitrary-start and stationary path laws remain within
+$\varepsilon/48$ TV. Since TV loss lies in $[0,1]$, their expected losses
+differ by at most $\varepsilon/48$. Theorem~\ref{thm:app-risk} and the choice
+of $T$ give
+\[
+ \E\TV(\widehat p,p)\le\varepsilon/48+\varepsilon/48
+ =\varepsilon/24.
+\]
+Markov's inequality proves \eqref{eq:app-base}.
+\end{proof}
+
+Repeat this construction independently $R$ times and let $\widehat p_r$ be
+the candidates. Define an $L_1$ geometric median
+\begin{equation}
+ \widetilde p\in\arg\min_{q\in\Delta_n}
+ \sum_{r=1}^R\TV(q,\widehat p_r).
+ \label{eq:app-median}
+\end{equation}
+Existence follows from compactness. The optimization is a linear program
+after introducing one absolute-value slack variable per candidate and
+coordinate.
+
+\begin{lemma}[Metric median]
+\label{lem:app-median}
+In any metric space, suppose $G>R/2$ of the points $z_1,\ldots,z_R$ lie
+within distance $r$ of $p$. Every minimizer $z$ of the sum of distances to
+the points satisfies
+\begin{equation}
+ d(z,p)\le\frac{2G}{2G-R}r.
+ \label{eq:app-median-bound}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Let $\mathcal G$ denote the good indices and $d=d(z,p)$. For a good point,
+\[
+ d(z,z_r)-d(p,z_r)\ge d-2r.
+\]
+For a bad point, the triangle inequality gives
+$d(z,z_r)-d(p,z_r)\ge-d$. Since the sum at $z$ is no larger than the sum at
+$p$,
+\[
+ 0\ge G(d-2r)-(R-G)d=(2G-R)d-2Gr.
+\]
+Rearranging proves the result.
+\end{proof}
+
+\begin{theorem}[High-confidence upper bound]
+\label{thm:app-upper}
+If $R=\lceil18\log(1/\delta)\rceil$, then
+\begin{equation}
+ \Prb\{\TV(\widetilde p,p)>\varepsilon\}\le\delta.
+ \label{eq:app-upper}
+\end{equation}
+The total number of pair queries is
+$O(n\log(1/\delta)/\varepsilon^2)$.
+\end{theorem}
+
+\begin{proof}
+Every candidate is good with probability at least $5/6$ by
+Lemma~\ref{lem:app-base}. Hoeffding's inequality gives
+\[
+ \Prb\{G<2R/3\}\le e^{-R/18}\le\delta.
+\]
+On the complementary event, apply Lemma~\ref{lem:app-median} with
+$r=\varepsilon/4$. The multiplicative factor in
+\eqref{eq:app-median-bound} is at most four, so the output error is at most
+$\varepsilon$.
+
+Each repetition uses $B+T$ queries. For $0<\varepsilon\le1/16$,
+$\log(48/\varepsilon)=O(1/\varepsilon^2)$, hence
+$B+T=O(n/\varepsilon^2)$. Multiplying by $R$ proves the query bound.
+\end{proof}
+
+\section{Adaptive Confidence Lower Bound}
+\label{app:lower}
+
+Let $n\ge4$, $0<\varepsilon\le1/16$, and define
+\begin{equation}
+ p_a(1)=a,\qquad p_a(j)=\frac{1-a}{n-1},\quad j\ge2.
+ \label{eq:app-hard-family}
+\end{equation}
+Take $a_-=1/2-2\varepsilon$ and $a_+=1/2+2\varepsilon$. Both lie in
+$[1/4,3/4]$, and
+\begin{equation}
+ \TV(p_{a_-},p_{a_+})=|a_--a_+|=4\varepsilon.
+ \label{eq:app-separation}
+\end{equation}
+
+If a queried pair excludes label $1$, its response is uniform under both
+hypotheses. If the pair is $\{1,j\}$, write one for a light-label response.
+The Bernoulli parameter is
+\begin{equation}
+ r(a)=\frac{1-a}{1+(n-2)a}.
+ \label{eq:app-r}
+\end{equation}
+For $a\in[1/4,3/4]$ and $n\ge4$,
+\begin{equation}
+ \frac1{3n}\le r(a)\le\frac3n,
+ \qquad
+ |r'(a)|=\frac{n-1}{(1+(n-2)a)^2}\le\frac{16}{n}.
+ \label{eq:app-r-bounds}
+\end{equation}
+Also $1-r(a)\ge1/4$. By the mean value theorem and the Bernoulli inequality
+\begin{equation}
+ D_{\rm KL}(\operatorname{Bern}(x)\|
+ \operatorname{Bern}(y))
+ \le\frac{(x-y)^2}{y(1-y)},
+ \label{eq:app-bern-kl}
+\end{equation}
+every possible pair query has conditional KL divergence at most
+\begin{equation}
+ C_1\frac{\varepsilon^2}{n}
+ \label{eq:app-per-query}
+\end{equation}
+between the two response laws, for a universal $C_1$.
+
+\begin{theorem}[Adaptive lower bound]
+\label{thm:app-lower}
+Any possibly randomized and adaptive learner using a fixed budget $Q$ and
+satisfying
+\begin{equation}
+ \sup_{p\in\Delta_n}
+ \Prb_p\{\TV(\widehat p,p)>\varepsilon\}\le\delta
+ \label{eq:app-learning-guarantee}
+\end{equation}
+must have
+\begin{equation}
+ Q\ge c\frac{n\log(1/\delta)}{\varepsilon^2}
+ \label{eq:app-lower}
+\end{equation}
+for $0<\delta\le1/8$ and a universal $c>0$.
+\end{theorem}
+
+\begin{proof}
+Include the learner's private random seed in its transcript. Conditional on
+every past transcript, its next pair is fixed. The conditional response laws
+then obey \eqref{eq:app-per-query}, regardless of which pair was selected.
+The KL chain rule gives
+\begin{equation}
+ D_{\rm KL}(\mathsf P_-^Q\|\mathsf P_+^Q)
+ \le C_1Q\frac{\varepsilon^2}{n},
+ \label{eq:app-transcript-kl}
+\end{equation}
+where $\mathsf P_-^Q,\mathsf P_+^Q$ are the complete transcript laws.
+
+Given the output $\widehat p$, test the two hypotheses by choosing the closer
+of $p_{a_-}$ and $p_{a_+}$ in TV. By
+\eqref{eq:app-separation}, every estimate within $\varepsilon$ of the truth
+is strictly closer to that truth. Thus the two testing errors are at most
+$\delta$. The Bretagnolle--Huber inequality
+\citep{tsybakov2009introduction} gives
+\begin{equation}
+ 2\delta\ge\frac12
+ \exp\{-D_{\rm KL}(\mathsf P_-^Q\|\mathsf P_+^Q)\}.
+ \label{eq:app-BH}
+\end{equation}
+Combining \eqref{eq:app-transcript-kl} and \eqref{eq:app-BH} yields
+\[
+ Q\ge\frac{n}{C_1\varepsilon^2}\log\frac1{4\delta}.
+\]
+For $\delta\le1/8$, this is \eqref{eq:app-lower} after changing the
+universal constant.
+\end{proof}
+
+Theorem~\ref{thm:app-upper} and Theorem~\ref{thm:app-lower} together prove
+the minimax theorem in the main paper.
+
+\section{A Bounded-Menu Confidence Lower Bound}
+\label{app:bounded-menu}
+
+The same family quantifies how menu size can reduce the confidence
+obstruction. Suppose every allowed conditional query has cardinality at most
+$k$, where $2\le k\le n$.
+
+\begin{proposition}[Bounded-menu lower bound]
+\label{prop:app-bounded-menu}
+Under the parameter ranges of Theorem~\ref{thm:app-lower}, every learner from
+menus of size at most $k$ requires
+\begin{equation}
+ Q=\Omega\!\left(
+ \frac{n}{k}\frac{\log(1/\delta)}{\varepsilon^2}
+ \right).
+ \label{eq:app-bounded-menu}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Use the two distributions in \eqref{eq:app-hard-family}. A menu excluding
+label $1$ is uniform under both hypotheses and carries no information. If a
+menu contains label $1$ and $s\le k-1$ light labels, the identity of a light
+winner is uniform conditional on a light outcome. The only informative
+statistic is therefore Bernoulli with light-outcome probability
+\begin{equation}
+ r_s(a)=\frac{s(1-a)}{(n-1)a+s(1-a)}.
+ \label{eq:app-rs}
+\end{equation}
+Uniformly for $a\in[1/4,3/4]$,
+$r_s(a)=\Theta(s/n)$ and
+\begin{equation}
+ |r_s'(a)|
+ =\frac{s(n-1)}{((n-1)a+s(1-a))^2}
+ =O(s/n).
+ \label{eq:app-rs-derivative}
+\end{equation}
+Equation \eqref{eq:app-bern-kl} now bounds the one-query KL by
+$Ck\varepsilon^2/n$. The adaptive transcript and testing argument from
+Theorem~\ref{thm:app-lower} gives \eqref{eq:app-bounded-menu}.
+\end{proof}
+
+Ordinary distribution-learning hardness also gives
+$\Omega(n/\varepsilon^2)$ even when the full domain is queryable
+\citep{canonne2020short}. Hence every bounded-menu learner has lower bound
+\[
+ \Omega\!\left(\frac{n+(n/k)\log(1/\delta)}{\varepsilon^2}\right).
+\]
+We do not claim a matching upper bound when $k>2$.
+
+\section{Mechanical Verification}
+\label{app:verification}
+
+The proofs are analytic. The script
+\texttt{verify\_trajectory\_theorem.py} performs independent floating-point
+checks designed to catch indexing, scaling, and inequality-direction errors.
+It does not supply evidence needed by any theorem.
+
+Across 1,014 seeded mass profiles in dimensions $2$ through $40$, including
+uniform, one-heavy, geometric, and Dirichlet profiles, the script checked:
+\begin{enumerate}
+\item the winner kernel's symmetrized eigenvalues lie in $[0,1]$,
+\item the Helmert formula \eqref{eq:app-diagonal} agrees with a direct
+pseudoinverse of $L_0$,
+\item the exact Green function is bounded by twice the comparison Green
+function coordinatewise,
+\item each of the left, middle, and right profile sums obeys its analytic
+bound,
+\item the exact finite-$T$ stationary covariance for
+$T\in\{1,2,5,20,100\}$ obeys
+Lemma~\ref{lem:app-coordinate-variance}, and
+\item the normalized one-query KL in the hard family stays below the loose
+analytic constant over $4\le n\le256$ and 80 logarithmically spaced
+accuracies.
+\end{enumerate}
+The largest observed normalized KL,
+$nD_{\rm KL}/\varepsilon^2$, was $161.847400$. The terminal output was
+\texttt{all trajectory-theorem checks passed}.
+
+An additional stress script sampled highly imbalanced simplex points through
+dimension $1024$. The observed asymptotic $L_1$ risk divided by
+$\sqrt{n/T}$ remained below $2.28$, while the theorem uses the conservative
+TV constant $2+2\sqrt2$. These searches motivated no step of the proof.
+
+\section{Source and Novelty Audit}
+\label{app:sources}
+
+We read the full 34-page paper of \citet{kleinberg2026providers}. Its generic
+complete-family learner runs a global winner chain, burns in, keeps one
+terminal state, and independently restarts. Its hierarchical learner keeps
+local trajectories but estimates one binary tree split at a time. Its
+pairwise corollary is
+$O(n\log^2n\log(n/\delta)/\varepsilon^2)$, and its conclusion explicitly
+leaves the polylogarithmic gaps open. It contains neither the empirical-law
+risk theorem nor the multiplicative-confidence lower bound.
+
+We also read the full papers on accelerated spectral ranking
+\citep{agarwal2018accelerated}, graph-resistance estimation
+\citep{hendrickx2019resistance}, and the asymptotic BTL minimax rate
+\citep{hendrickx2020minimax}, together with the full paper and supplement of
+\citet{shah2015estimation}. They study fixed comparison designs and parameter
+losses. Their useful uniform guarantees assume positive weights and bounded
+parameter ranges or enter a many-comparisons-per-edge regime. None analyzes
+the query-driven winner trajectory used here.
+
+The full exact-sampling paper of \citet{fotakis2022perfect} uses coupling
+from the past for an exogenous pair design. Its distribution-free procedure
+first estimates all weights to relative accuracy under a learnability
+condition, then modifies the chain and performs exact correction. Its goal
+and complexity are distinct from minimax labeled TV learning.
+
+For statistical context, we read the complete ordinary distribution-learning
+note of \citet{canonne2020short}, the full Markov Bernstein paper of
+\citet{jiang2018bernstein}, and the classical biased-sampling sources
+\citep{vardi1985empirical,gill1988large}. The first gives the additive
+ordinary-sampling confidence benchmark. Generic spectral-gap concentration
+from the second incurs the relaxation-time factor avoided by the capped-mass
+profile. The biased-sampling results are asymptotic and fixed-design.
+
+A live arXiv API, arXiv web, and PMLR search through July 30, 2026 combined
+pairwise conditional sampling, PCOND, Bradley--Terry--Luce distribution
+learning, stationary-law estimation, empirical trajectories, total
+variation, and confidence. It returned the sources above but no theorem with
+the rate in the main paper, no capped-mass Helmert analysis, and no matching
+high-confidence lower bound. The closest source,
+\citet{kleinberg2026providers}, was posted on July 27, 2026 and is cited as
+the direct starting point rather than presented as concurrent work.
+
+\bibliography{references}
+
+\end{document}
