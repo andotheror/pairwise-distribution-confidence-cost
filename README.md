@@ -32,6 +32,6 @@ $$
 
 ## Files
 
-- `main.pdf` — the paper.
-- `supplement.pdf` — full proofs and the deterministic verification audit.
-- `*.ots` — OpenTimestamps proofs establishing the existence date of each file.
+- `main.pdf`, the paper.
+- `supplement.pdf`, full proofs and the deterministic verification audit.
+- `*.ots`, OpenTimestamps proofs establishing the existence date of each file.
