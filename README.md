@@ -27,7 +27,7 @@ The upper bound is attained by a polynomial-time adaptive learner and allows arb
 **Theorem (Stationary occupation risk).** Let $(X_t)_{t=1}^T$ be a stationary trajectory of the pairwise-winner chain, and let $\widehat p_T$ be its empirical law. For every $p\in\Delta_n$,
 
 $$
-\mathbb{E}_p\,\mathrm{TV}(\widehat p_T,p) \le (2+2\sqrt{2})\sqrt{\frac{n}{T}}.
+\mathbb{E}_p\\,\mathrm{TV}(\widehat p_T,p) \le (2+2\sqrt{2})\sqrt{\frac{n}{T}}.
 $$
 
 ## Files
