@@ -1,0 +1,71 @@
+\begin{thebibliography}{}
+
+\bibitem[Agarwal et~al., 2018]{agarwal2018accelerated}
+Agarwal, A., Patil, P., and Agarwal, S. (2018).
+\newblock Accelerated spectral ranking.
+\newblock In {\em Proceedings of the 35th International Conference on Machine
+  Learning}, volume~80 of {\em Proceedings of Machine Learning Research}, pages
+  70--79.
+
+\bibitem[Canonne, 2020]{canonne2020short}
+Canonne, C.~L. (2020).
+\newblock A short note on learning discrete distributions.
+\newblock {\em arXiv preprint arXiv:2002.11457}.
+
+\bibitem[Fotakis et~al., 2022]{fotakis2022perfect}
+Fotakis, D., Kalavasis, A., and Tzamos, C. (2022).
+\newblock Perfect sampling from pairwise comparisons.
+\newblock In {\em Advances in Neural Information Processing Systems},
+  volume~35.
+
+\bibitem[Gill et~al., 1988]{gill1988large}
+Gill, R.~D., Vardi, Y., and Wellner, J.~A. (1988).
+\newblock Large sample theory of empirical distributions in biased sampling
+  models.
+\newblock {\em The Annals of Statistics}, 16(3):1069--1112.
+
+\bibitem[Hendrickx et~al., 2020]{hendrickx2020minimax}
+Hendrickx, J., Olshevsky, A., and Saligrama, V. (2020).
+\newblock Minimax rate for learning from pairwise comparisons in the {BTL}
+  model.
+\newblock In {\em Proceedings of the 37th International Conference on Machine
+  Learning}, volume 119 of {\em Proceedings of Machine Learning Research},
+  pages 4193--4202.
+
+\bibitem[Hendrickx et~al., 2019]{hendrickx2019resistance}
+Hendrickx, J.~M., Olshevsky, A., and Saligrama, V. (2019).
+\newblock Graph resistance and learning from pairwise comparisons.
+\newblock In {\em Proceedings of the 36th International Conference on Machine
+  Learning}, volume~97 of {\em Proceedings of Machine Learning Research}, pages
+  2702--2711.
+
+\bibitem[Jiang et~al., 2018]{jiang2018bernstein}
+Jiang, B., Sun, Q., and Fan, J. (2018).
+\newblock Bernstein's inequalities for general markov chains.
+\newblock {\em arXiv preprint arXiv:1805.10721}.
+
+\bibitem[Kleinberg et~al., 2026]{kleinberg2026providers}
+Kleinberg, J., Saberi, A., Tan, X., and Velegkas, G. (2026).
+\newblock Learning distributions from multiple data providers.
+\newblock {\em arXiv preprint arXiv:2607.24732}.
+
+\bibitem[Shah et~al., 2015]{shah2015estimation}
+Shah, N.~B., Balakrishnan, S., Bradley, J., Parekh, A., Ramchandran, K., and
+  Wainwright, M.~J. (2015).
+\newblock Estimation from pairwise comparisons: Sharp minimax bounds with
+  topology dependence.
+\newblock In {\em Proceedings of the Eighteenth International Conference on
+  Artificial Intelligence and Statistics}, volume~38 of {\em Proceedings of
+  Machine Learning Research}, pages 856--865.
+
+\bibitem[Tsybakov, 2009]{tsybakov2009introduction}
+Tsybakov, A.~B. (2009).
+\newblock {\em Introduction to Nonparametric Estimation}.
+\newblock Springer.
+
+\bibitem[Vardi, 1985]{vardi1985empirical}
+Vardi, Y. (1985).
+\newblock Empirical distributions in selection bias models.
+\newblock {\em The Annals of Statistics}, 13(1):178--203.
+
+\end{thebibliography}
